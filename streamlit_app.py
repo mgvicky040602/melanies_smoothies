@@ -57,3 +57,9 @@ if ingredients_list:
 # Close the Snowflake connection
 session.close()
 cnx.close()
+
+
+import requests
+fruityvice_response = requests.get("https://fruityvice.com/api/fruit/watermelon")
+st.text(fruityvice_response)
+
