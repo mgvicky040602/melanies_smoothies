@@ -16,7 +16,6 @@ Name_on_Order = st.text_input('Name on Smoothie:')
 st.write("The name of your smoothie will be", Name_on_Order)
 
 # Snowflake connection setup
-# Replace with your Snowflake credentials or connection method
 cnx = snowflake.connector.connect(
     user='Vignesh',
     password='Lover_boy_of_life@040602',
@@ -38,9 +37,18 @@ ingredients_list = st.multiselect("Choose up to 5 ingredients:", fruit_names, ma
 
 if ingredients_list:
     ingredients_string = ', '.join(ingredients_list)  # Create a string from the list
-    st.subheader(fruit_chosen+'Nutrition Information')
-    fruityvice_response = requests.get("https://fruityvice.com/api/fruit/watermelon"+fruit_chosen)
-    fv_df = st.dataframe(data =fruityvice_response.json(),use_container_width = True )
+
+    # Display Nutrition Information for each selected ingredient
+    for fruit_chosen in ingredients_list:
+        st.subheader(fruit_chosen + ' Nutrition Information')
+
+        # Fetching nutrition information for the selected fruit
+        fruityvice_response = requests.get(f"https://fruityvice.com/api/fruit/{fruit_chosen.lower()}")
+
+        if fruityvice_response.status_code == 200:
+            fv_df = st.json(fruityvice_response.json())  # Displaying the API response as JSON
+        else:
+            st.error(f"Could not fetch nutrition info for {fruit_chosen}")
 
     st.write(ingredients_string)
 
@@ -62,6 +70,3 @@ if ingredients_list:
 # Close the Snowflake connection
 session.close()
 cnx.close()
-
-
-
