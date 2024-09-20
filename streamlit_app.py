@@ -11,11 +11,8 @@ st.write("Choose the fruit you want in your custom smoothie!")
 Name_on_Order = st.text_input('Name on Smoothie:')
 st.write("The name of your smoothie will be", Name_on_Order)
 
-# Get the active session
-try:
-    session = get_active_session()
-except Exception as e:
-    st.error(f"Failed to get active session: {e}")
+# Initialize the session
+session = get_active_session()
 
 # Retrieve the fruit options
 try:
