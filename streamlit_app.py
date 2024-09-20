@@ -1,6 +1,5 @@
 # Import python packages
 import streamlit as st
-
 from snowflake.snowpark.functions import col
 
 # Write directly to the app
@@ -10,43 +9,47 @@ st.write(
     """
 )
 
-
-
+# Text input for smoothie name
 Name_on_Order = st.text_input('Name on Smoothie:')
 st.write("The name of your smoothie will be", Name_on_Order)
 
-
-#session = get_active_session()
-cnx = st.connection("snowflake")
+# Get the Snowflake connection session
+cnx = st.experimental_connection("snowflake", type="snowpark")  # Ensure connection type is Snowpark
 session = cnx.session
-my_dataframe = session.table("smoothies.public.fruit_options").select(col('Fruit_Name'))
-#st.dataframe(data=my_dataframe, use_container_width=True)
 
-
-ingredients_list = st.multiselect("Choose upto 5 ingrediants: ",my_dataframe,max_selections =5)
-
-if ingredients_list:
+# Query the fruit options table
+try:
+    # Use .table and select required column
+    my_dataframe = session.table("smoothies.public.fruit_options").select(col('Fruit_Name')).collect()
     
-    ingredients_string = ' '.join(ingredients_list)  # Use join for a cleaner approach
-
-    st.write(ingredients_string)
-
-    # Adjust the INSERT statement to match column list
-    my_insert_stmt = f""" 
-        INSERT INTO smoothies.public.orders (ingredients, name_on_order)
-        VALUES ('{ingredients_string}', '{Name_on_Order}')
-    """
-
-    st.write(my_insert_stmt)
-
-    time_to_insert = st.button('Submit Order')
-
-    if time_to_insert:
-        session.sql(my_insert_stmt).collect()
-        st.success(f"Your Smoothie is ordered, {Name_on_Order}!", icon="✅")
-
-
-
+    # Extract the fruit names into a list
+    fruit_names = [row['Fruit_Name'] for row in my_dataframe]
     
-
-
+    # Multiselect for ingredients with a max of 5 selections
+    ingredients_list = st.multiselect("Choose up to 5 ingredients: ", fruit_names, max_selections=5)
+    
+    if ingredients_list:
+        # Join the selected ingredients into a string
+        ingredients_string = ', '.join(ingredients_list)
+        
+        # Display the selected ingredients
+        st.write("Your selected ingredients: ", ingredients_string)
+        
+        # SQL statement to insert the order into the 'orders' table
+        my_insert_stmt = f"""
+            INSERT INTO smoothies.public.orders (ingredients, name_on_order)
+            VALUES ('{ingredients_string}', '{Name_on_Order}')
+        """
+        
+        # Display the SQL query for review
+        st.write("SQL Query to be executed: ", my_insert_stmt)
+        
+        # Button to submit the order
+        time_to_insert = st.button('Submit Order')
+        
+        if time_to_insert:
+            # Execute the SQL insert statement
+            session.sql(my_insert_stmt).collect()
+            st.success(f"Your Smoothie is ordered, {Name_on_Order}!", icon="✅")
+except Exception as e:
+    st.error(f"Error querying the database: {e}")
