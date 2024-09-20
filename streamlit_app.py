@@ -1,4 +1,5 @@
 import streamlit as st
+from snowflake.snowpark import Session
 from snowflake.snowpark.functions import col
 
 # Write directly to the app
@@ -8,8 +9,8 @@ st.write("Choose the fruit you want in your custom smoothie!")
 Name_on_Order = st.text_input('Name on Smoothie:')
 st.write("The name of your smoothie will be", Name_on_Order)
 
-cnx = st.connection("snowflake")
-session = cnx.session
+# Initialize session
+session = get_active_session()  # Ensure this is uncommented and properly used
 
 # Retrieve the fruit options
 my_dataframe = session.table("smoothies.public.fruit_options").select(col('Fruit_Name')).collect()
@@ -18,10 +19,9 @@ fruit_names = [row['Fruit_Name'] for row in my_dataframe]
 ingredients_list = st.multiselect("Choose up to 5 ingredients:", fruit_names, max_selections=5)
 
 if ingredients_list:
-    ingredients_string = ', '.join(ingredients_list)  # Use join for a cleaner approach
+    ingredients_string = ', '.join(ingredients_list)
     st.write(ingredients_string)
 
-    # Adjust the INSERT statement to match column list
     my_insert_stmt = f""" 
         INSERT INTO smoothies.public.orders (ingredients, name_on_order)
         VALUES ('{ingredients_string}', '{Name_on_Order}')
