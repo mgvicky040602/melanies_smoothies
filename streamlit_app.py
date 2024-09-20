@@ -1,6 +1,6 @@
 # Import python packages
 import streamlit as st
-
+import snowflake.connector
 from snowflake.snowpark.functions import col
 
 # Write directly to the app
@@ -10,29 +10,37 @@ st.write(
     """
 )
 
-
-
+# Input for smoothie name
 Name_on_Order = st.text_input('Name on Smoothie:')
 st.write("The name of your smoothie will be", Name_on_Order)
 
+# Snowflake connection setup
+# Replace with your Snowflake credentials or connection method
+cnx = snowflake.connector.connect(
+    user='Vignesh',
+    password='Lover_boy_of_life@040602',
+    account='IFXMSBO-OW85605',
+    warehouse='COMPUTE_WH',
+    database='SMOOTHIES',
+    schema='PUBLIC'
+)
+session = cnx.cursor()
 
-#session = get_active_session()
-cnx = st.connection("snowflake")
-session = cnx.session
-my_dataframe = session.table("smoothies.public.fruit_options").select(col('Fruit_Name'))
-#st.dataframe(data=my_dataframe, use_container_width=True)
+# Querying the available fruit options from the Snowflake table
+query = "SELECT Fruit_Name FROM smoothies.public.fruit_options"
+session.execute(query)
+fruit_data = session.fetchall()
+fruit_names = [row[0] for row in fruit_data]  # Extracting fruit names from query result
 
-
-ingredients_list = st.multiselect("Choose upto 5 ingrediants: ",my_dataframe,max_selections =5)
+# Let user select ingredients
+ingredients_list = st.multiselect("Choose up to 5 ingredients:", fruit_names, max_selections=5)
 
 if ingredients_list:
-    
-    ingredients_string = ' '.join(ingredients_list)  # Use join for a cleaner approach
-
+    ingredients_string = ', '.join(ingredients_list)  # Create a string from the list
     st.write(ingredients_string)
 
-    # Adjust the INSERT statement to match column list
-    my_insert_stmt = f""" 
+    # Prepare SQL insert statement
+    my_insert_stmt = f"""
         INSERT INTO smoothies.public.orders (ingredients, name_on_order)
         VALUES ('{ingredients_string}', '{Name_on_Order}')
     """
@@ -42,11 +50,10 @@ if ingredients_list:
     time_to_insert = st.button('Submit Order')
 
     if time_to_insert:
-        session.sql(my_insert_stmt).collect()
+        session.execute(my_insert_stmt)
+        cnx.commit()
         st.success(f"Your Smoothie is ordered, {Name_on_Order}!", icon="✅")
 
-
-
-    
-
-
+# Close the Snowflake connection
+session.close()
+cnx.close()
