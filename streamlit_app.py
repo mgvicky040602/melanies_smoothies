@@ -1,7 +1,6 @@
 # Import python packages
 import streamlit as st
 import snowflake.connector
-from snowflake.snowpark.functions import col
 import requests
 
 # Write directly to the app
@@ -40,17 +39,18 @@ if ingredients_list:
 
     # Display Nutrition Information for each selected ingredient
     for fruit_chosen in ingredients_list:
-        st.subheader(fruit_chosen + ' Nutrition Information')
+        st.subheader(f"{fruit_chosen} Nutrition Information")
 
         # Fetching nutrition information for the selected fruit
         fruityvice_response = requests.get(f"https://fruityvice.com/api/fruit/{fruit_chosen.lower()}")
 
         if fruityvice_response.status_code == 200:
-            fv_df = st.json(fruityvice_response.json())  # Displaying the API response as JSON
+            nutrition_info = fruityvice_response.json()  # Parsing the API response
+            st.json(nutrition_info)  # Displaying the API response as JSON
         else:
             st.error(f"Could not fetch nutrition info for {fruit_chosen}")
 
-    st.write(ingredients_string)
+    st.write(f"Selected ingredients: {ingredients_string}")
 
     # Prepare SQL insert statement
     my_insert_stmt = f"""
@@ -58,7 +58,8 @@ if ingredients_list:
         VALUES ('{ingredients_string}', '{Name_on_Order}')
     """
 
-    st.write(my_insert_stmt)
+    st.write("SQL Insert Statement Preview:")
+    st.code(my_insert_stmt)
 
     time_to_insert = st.button('Submit Order')
 
